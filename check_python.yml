@@ -1,0 +1,40 @@
+---
+- name: 检查Python解释器
+  hosts: all
+  gather_facts: false
+  become: false
+  
+  tasks:
+    - name: 检查Python3
+      raw: which python3
+      register: python3_check
+      ignore_errors: true
+      
+    - name: 检查Python2
+      raw: which python
+      register: python2_check
+      ignore_errors: true
+      
+    - name: 检查Python版本
+      raw: python3 --version 2>/dev/null || python --version 2>/dev/null || echo "Python not found"
+      register: python_version
+      ignore_errors: true
+      
+    - name: 显示Python信息
+      debug:
+        msg: |
+          主机: {{ inventory_hostname }}
+          Python3路径: {{ python3_check.stdout | default('未找到') }}
+          Python2路径: {{ python2_check.stdout | default('未找到') }}
+          Python版本: {{ python_version.stdout | default('未知') }}
+          
+    - name: 检查系统信息
+      raw: cat /etc/os-release | head -3
+      register: os_info
+      ignore_errors: true
+      
+    - name: 显示系统信息
+      debug:
+        msg: |
+          系统信息:
+          {{ os_info.stdout | default('无法获取系统信息') }} 
