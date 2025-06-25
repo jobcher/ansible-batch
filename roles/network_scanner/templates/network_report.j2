@@ -1,0 +1,29 @@
+# 网络扫描报告
+生成时间: {{ ansible_date_time.iso8601 }}
+
+## 网络发现结果
+
+### 发现的活跃主机
+{% if discovered_hosts %}
+{% for host in discovered_hosts %}
+- {{ host }}
+{% endfor %}
+{% else %}
+未发现活跃主机
+{% endif %}
+
+### 端口扫描结果
+{% if port_scan is defined and port_scan.stdout %}
+{{ port_scan.stdout }}
+{% else %}
+端口扫描未完成
+{% endif %}
+
+## 扫描配置
+- 扫描网段: {{ network_subnet | default('未指定') }}
+- 扫描端口: {{ scan_ports | default([]) | join(', ') }}
+- 目标主机: {{ target_hosts | default([]) | join(', ') }}
+
+## 总结
+- 发现主机数量: {{ discovered_hosts | length if discovered_hosts else 0 }}
+- 扫描完成时间: {{ ansible_date_time.iso8601 }} 

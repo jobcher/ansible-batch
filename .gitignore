@@ -1,0 +1,83 @@
+# Ansible服务器资产扫描工具 .gitignore
+
+# 临时文件
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+
+# 日志文件
+*.log
+logs/
+
+# 报告文件
+/tmp/asset_reports/
+/tmp/network_reports/
+reports/
+
+# 主机清单（可能包含敏感信息）
+inventory/discovered_hosts.yml
+inventory/localhost.yml
+
+# SSH密钥
+*.pem
+*.key
+id_rsa
+id_rsa.pub
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# 虚拟环境
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# 操作系统
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# 备份文件
+*.bak
+*.backup
+*.old
+
+# 配置文件（可能包含敏感信息）
+config.ini
+secrets.yml
+*.env 

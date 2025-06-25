@@ -1,0 +1,4 @@
+---
+- name: restart services
+  debug:
+    msg: "Services would be restarted here if needed" 

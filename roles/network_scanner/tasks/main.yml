@@ -1,0 +1,62 @@
+---
+- name: 检查nmap是否安装
+  command: which nmap
+  register: nmap_check
+  ignore_errors: true
+  tags: [network, discovery]
+
+- name: 安装nmap (Ubuntu/Debian)
+  apt:
+    name: nmap
+    state: present
+  when: 
+    - ansible_os_family == "Debian"
+    - nmap_check.rc != 0
+  become: true
+  tags: [network, discovery]
+
+- name: 安装nmap (CentOS/RHEL)
+  yum:
+    name: nmap
+    state: present
+  when: 
+    - ansible_os_family == "RedHat"
+    - nmap_check.rc != 0
+  become: true
+  tags: [network, discovery]
+
+- name: 扫描网络中的活跃主机
+  shell: |
+    nmap -sn {{ network_subnet }} | grep -E "Nmap scan report|MAC Address"
+  register: network_scan
+  delegate_to: localhost
+  tags: [network, discovery]
+
+- name: 解析扫描结果
+  set_fact:
+    discovered_hosts: "{{ network_scan.stdout_lines | select('match', 'Nmap scan report') | list }}"
+  tags: [network, discovery]
+
+- name: 显示发现的服务器
+  debug:
+    msg: "发现的主机: {{ discovered_hosts }}"
+  tags: [network, discovery]
+
+- name: 扫描指定端口的开放情况
+  shell: |
+    nmap -p {{ scan_ports | join(',') }} {{ target_hosts | join(' ') }}
+  register: port_scan
+  delegate_to: localhost
+  vars:
+    scan_ports: [22, 80, 443, 3306, 5432, 6379, 8080]
+    target_hosts: "{{ groups['servers'] | map('extract', hostvars, 'ansible_host') | list }}"
+  tags: [network, ports]
+
+- name: 生成网络扫描报告
+  template:
+    src: network_report.j2
+    dest: "{{ report_path }}/network_scan_report_{{ ansible_date_time.epoch }}.txt"
+  vars:
+    report_path: "/tmp/network_reports"
+  delegate_to: localhost
+  tags: [network, report] 

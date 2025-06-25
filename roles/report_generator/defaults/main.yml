@@ -1,0 +1,21 @@
+---
+# 报告生成配置
+report_generator:
+  # 报告保存路径
+  report_path: "/tmp/asset_reports"
+  
+  # 报告格式
+  formats:
+    - json
+    - html
+    - csv
+    - txt
+    
+  # 是否包含详细信息
+  include_details: true
+  
+  # 是否包含敏感信息
+  include_sensitive: false
+  
+  # 报告模板路径
+  template_path: "templates" 

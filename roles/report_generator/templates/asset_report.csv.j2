@@ -1,0 +1,4 @@
+主机名,IP地址,操作系统,内核版本,架构,CPU核心数,内存总量(MB),默认IP,网络接口数,运行时间,状态
+{% for host in groups['servers'] %}
+{% set host_vars = hostvars[host] %}{{ host }},{{ host_vars.ansible_host | default('unknown') }},{{ host_vars.ansible_distribution | default('unknown') }} {{ host_vars.ansible_distribution_version | default('') }},{{ host_vars.ansible_kernel | default('unknown') }},{{ host_vars.ansible_architecture | default('unknown') }},{{ host_vars.ansible_processor_cores | default('unknown') }},{{ host_vars.ansible_memtotal_mb | default('unknown') }},{{ host_vars.ansible_default_ipv4.address | default('unknown') }},{{ host_vars.ansible_interfaces | default([]) | length }},{{ host_vars.load_info.stdout | default('unknown') | replace(',', ';') }},在线
+{% endfor %} 

@@ -1,0 +1,26 @@
+---
+# 网络扫描配置
+network_scanner:
+  # 要扫描的网段
+  network_subnet: "192.168.1.0/24"
+  
+  # 扫描端口列表
+  scan_ports:
+    - 22    # SSH
+    - 80    # HTTP
+    - 443   # HTTPS
+    - 3306  # MySQL
+    - 5432  # PostgreSQL
+    - 6379  # Redis
+    - 8080  # HTTP Alt
+    - 9000  # Jenkins
+    - 27017 # MongoDB
+    
+  # 扫描超时时间
+  scan_timeout: 300
+  
+  # 是否进行快速扫描
+  quick_scan: false
+  
+  # 报告保存路径
+  report_path: "/tmp/network_reports" 

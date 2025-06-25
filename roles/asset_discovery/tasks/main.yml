@@ -1,0 +1,76 @@
+---
+- name: 收集系统基本信息
+  setup:
+    gather_subset:
+      - hardware
+      - network
+      - distribution
+      - system
+      - virtual
+  tags: [asset, basic_info]
+
+- name: 获取CPU信息
+  shell: |
+    cat /proc/cpuinfo | grep -E "model name|processor|physical id|core id" | head -20
+  register: cpu_info
+  tags: [asset, cpu]
+
+- name: 获取内存信息
+  shell: |
+    free -h
+  register: memory_info
+  tags: [asset, memory]
+
+- name: 获取磁盘信息
+  shell: |
+    df -h
+  register: disk_info
+  tags: [asset, disk]
+
+- name: 获取网络接口信息
+  shell: |
+    ip addr show
+  register: network_info
+  tags: [asset, network]
+
+- name: 获取系统负载
+  shell: |
+    uptime
+  register: load_info
+  tags: [asset, load]
+
+- name: 获取运行的服务
+  shell: |
+    systemctl list-units --type=service --state=running | head -20
+  register: services_info
+  tags: [asset, services]
+
+- name: 获取已安装的软件包数量
+  shell: |
+    if command -v dpkg >/dev/null 2>&1; then
+      dpkg -l | wc -l
+    elif command -v rpm >/dev/null 2>&1; then
+      rpm -qa | wc -l
+    else
+      echo "Unknown package manager"
+    fi
+  register: packages_count
+  tags: [asset, packages]
+
+- name: 获取系统用户信息
+  shell: |
+    cat /etc/passwd | wc -l
+  register: users_count
+  tags: [asset, users]
+
+- name: 获取开放端口
+  shell: |
+    ss -tuln | head -20
+  register: open_ports
+  tags: [asset, ports]
+
+- name: 获取系统时间
+  shell: |
+    date
+  register: system_time
+  tags: [asset, time] 

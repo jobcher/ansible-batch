@@ -1,0 +1,35 @@
+{
+  "report_info": {
+    "generated_at": "{{ ansible_date_time.iso8601 }}",
+    "total_hosts": "{{ groups['servers'] | length }}",
+    "scan_duration": "{{ ansible_date_time.epoch | int - (ansible_date_time.epoch | int - 300) }}"
+  },
+  "hosts": [
+{% for host in groups['servers'] %}
+{% set host_vars = hostvars[host] %}
+    {
+      "hostname": "{{ host }}",
+      "ip_address": "{{ host_vars.ansible_host | default('unknown') }}",
+      "system_info": {
+        "distribution": "{{ host_vars.ansible_distribution | default('unknown') }}",
+        "version": "{{ host_vars.ansible_distribution_version | default('unknown') }}",
+        "kernel": "{{ host_vars.ansible_kernel | default('unknown') }}",
+        "architecture": "{{ host_vars.ansible_architecture | default('unknown') }}"
+      },
+      "hardware_info": {
+        "cpu_count": "{{ host_vars.ansible_processor_cores | default('unknown') }}",
+        "memory_total": "{{ host_vars.ansible_memtotal_mb | default('unknown') }}",
+        "disk_info": "{{ host_vars.disk_info.stdout | default('unknown') | replace('\n', ' ') }}"
+      },
+      "network_info": {
+        "interfaces": "{{ host_vars.ansible_interfaces | default([]) }}",
+        "default_ipv4": "{{ host_vars.ansible_default_ipv4.address | default('unknown') }}"
+      },
+      "system_status": {
+        "uptime": "{{ host_vars.load_info.stdout | default('unknown') }}",
+        "load_average": "{{ host_vars.load_info.stdout | default('unknown') }}"
+      }
+    }{% if not loop.last %},{% endif %}
+{% endfor %}
+  ]
+} 

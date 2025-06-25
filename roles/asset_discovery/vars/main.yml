@@ -1,0 +1,28 @@
+---
+# 资产发现变量
+discovery_vars:
+  # 系统信息收集命令
+  commands:
+    cpu_info: "lscpu"
+    memory_info: "free -h"
+    disk_info: "df -h"
+    network_info: "ip addr show"
+    load_info: "uptime"
+    os_info: "cat /etc/os-release"
+    kernel_info: "uname -a"
+    
+  # 文件路径
+  paths:
+    cpu_info_file: "/proc/cpuinfo"
+    memory_info_file: "/proc/meminfo"
+    os_release_file: "/etc/os-release"
+    
+  # 网络扫描端口
+  scan_ports:
+    - 22
+    - 80
+    - 443
+    - 3306
+    - 5432
+    - 6379
+    - 8080 

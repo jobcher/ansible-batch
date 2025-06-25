@@ -1,0 +1,20 @@
+---
+# 资产发现配置
+asset_discovery:
+  # 是否收集详细信息
+  detailed_info: true
+  
+  # 是否收集网络信息
+  collect_network: true
+  
+  # 是否收集服务信息
+  collect_services: true
+  
+  # 是否收集安全信息
+  collect_security: true
+  
+  # 输出格式
+  output_format: "json"
+  
+  # 报告保存路径
+  report_path: "/tmp/asset_reports" 

@@ -1,0 +1,56 @@
+---
+- name: 创建报告目录
+  file:
+    path: "{{ report_path }}"
+    state: directory
+    mode: '0755'
+  delegate_to: localhost
+  tags: [report, setup]
+
+- name: 收集所有主机的资产信息
+  set_fact:
+    all_assets: "{{ hostvars | dict2items | selectattr('value.ansible_facts', 'defined') | list }}"
+  run_once: true
+  delegate_to: localhost
+  tags: [report, collect]
+
+- name: 生成JSON格式的资产报告
+  template:
+    src: asset_report.json.j2
+    dest: "{{ report_path }}/asset_report_{{ ansible_date_time.epoch }}.json"
+  delegate_to: localhost
+  tags: [report, json]
+
+- name: 生成HTML格式的资产报告
+  template:
+    src: asset_report.html.j2
+    dest: "{{ report_path }}/asset_report_{{ ansible_date_time.epoch }}.html"
+  delegate_to: localhost
+  tags: [report, html]
+
+- name: 生成CSV格式的资产报告
+  template:
+    src: asset_report.csv.j2
+    dest: "{{ report_path }}/asset_report_{{ ansible_date_time.epoch }}.csv"
+  delegate_to: localhost
+  tags: [report, csv]
+
+- name: 生成汇总报告
+  template:
+    src: summary_report.txt.j2
+    dest: "{{ report_path }}/summary_report_{{ ansible_date_time.epoch }}.txt"
+  delegate_to: localhost
+  tags: [report, summary]
+
+- name: 显示报告生成完成信息
+  debug:
+    msg: |
+      报告生成完成！
+      报告位置: {{ report_path }}
+      生成的文件:
+      - asset_report_{{ ansible_date_time.epoch }}.json
+      - asset_report_{{ ansible_date_time.epoch }}.html
+      - asset_report_{{ ansible_date_time.epoch }}.csv
+      - summary_report_{{ ansible_date_time.epoch }}.txt
+  delegate_to: localhost
+  tags: [report, complete] 
