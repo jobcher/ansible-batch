@@ -7,38 +7,60 @@
   delegate_to: localhost
   tags: [report, setup]
 
-- name: 收集所有主机的资产信息
+- name: 获取当前时间戳
+  raw: date +%s
+  register: timestamp
+  delegate_to: localhost
+  tags: [report, collect]
+
+- name: 获取当前时间
+  raw: date
+  register: current_time
+  delegate_to: localhost
+  tags: [report, collect]
+
+- name: 收集hosts.yml中的主机信息
   set_fact:
-    all_assets: "{{ hostvars | dict2items | selectattr('value.ansible_facts', 'defined') | list }}"
+    hosts_info: "{{ groups['servers'] | map('extract', hostvars) | list }}"
   run_once: true
+  delegate_to: localhost
+  tags: [report, collect]
+
+- name: 显示收集到的主机信息
+  debug:
+    msg: |
+      从hosts.yml收集到的主机信息:
+      {% for host in hosts_info %}
+      - {{ host.inventory_hostname }}: {{ host.ansible_host }}
+      {% endfor %}
   delegate_to: localhost
   tags: [report, collect]
 
 - name: 生成JSON格式的资产报告
   template:
     src: asset_report.json.j2
-    dest: "{{ report_path }}/asset_report_{{ ansible_date_time.epoch }}.json"
+    dest: "{{ report_path }}/asset_report_{{ timestamp.stdout }}.json"
   delegate_to: localhost
   tags: [report, json]
 
 - name: 生成HTML格式的资产报告
   template:
     src: asset_report.html.j2
-    dest: "{{ report_path }}/asset_report_{{ ansible_date_time.epoch }}.html"
+    dest: "{{ report_path }}/asset_report_{{ timestamp.stdout }}.html"
   delegate_to: localhost
   tags: [report, html]
 
 - name: 生成CSV格式的资产报告
   template:
     src: asset_report.csv.j2
-    dest: "{{ report_path }}/asset_report_{{ ansible_date_time.epoch }}.csv"
+    dest: "{{ report_path }}/asset_report_{{ timestamp.stdout }}.csv"
   delegate_to: localhost
   tags: [report, csv]
 
 - name: 生成汇总报告
   template:
     src: summary_report.txt.j2
-    dest: "{{ report_path }}/summary_report_{{ ansible_date_time.epoch }}.txt"
+    dest: "{{ report_path }}/summary_report_{{ timestamp.stdout }}.txt"
   delegate_to: localhost
   tags: [report, summary]
 
@@ -48,9 +70,9 @@
       报告生成完成！
       报告位置: {{ report_path }}
       生成的文件:
-      - asset_report_{{ ansible_date_time.epoch }}.json
-      - asset_report_{{ ansible_date_time.epoch }}.html
-      - asset_report_{{ ansible_date_time.epoch }}.csv
-      - summary_report_{{ ansible_date_time.epoch }}.txt
+      - asset_report_{{ timestamp.stdout }}.json
+      - asset_report_{{ timestamp.stdout }}.html
+      - asset_report_{{ timestamp.stdout }}.csv
+      - summary_report_{{ timestamp.stdout }}.txt
   delegate_to: localhost
   tags: [report, complete] 

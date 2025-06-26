@@ -6,18 +6,23 @@
   
   vars:
     # 全局变量
-    scan_network: true
+    scan_network: false  # 跳过网络扫描
     collect_assets: true
     generate_reports: true
-    network_subnet: "192.168.1.0/24"
+    network_subnet: "193.0.10.0/24"
     
   pre_tasks:
+    - name: 获取当前时间
+      raw: date
+      register: current_time
+      
     - name: 显示扫描开始信息
       debug:
         msg: |
           开始服务器资产扫描 (Python 2.7兼容)
           目标主机: {{ groups['servers'] | length }} 台
-          扫描时间: {{ ansible_date_time.iso8601 }}
+          扫描时间: {{ current_time.stdout }}
+          跳过网络扫描，直接基于hosts.yml中的主机
       
   roles:
     - role: asset_discovery
@@ -28,20 +33,17 @@
       debug:
         msg: "资产信息收集完成"
 
-- name: 网络扫描和发现
+- name: 生成资产报告 (基于hosts.yml)
   hosts: localhost
   connection: local
   gather_facts: false
   
-  roles:
-    - role: network_scanner
-      tags: [network, scanner]
-      
-- name: 生成资产报告
-  hosts: localhost
-  connection: local
-  gather_facts: false
+  vars:
+    # 报告生成变量
+    report_based_on_hosts: true
+    target_hosts: "{{ groups['servers'] | map('extract', hostvars, 'ansible_host') | list }}"
+    report_path: "/tmp/asset_reports"
   
   roles:
     - role: report_generator
-      tags: [report, generator] 
+      tags: [report, generator]

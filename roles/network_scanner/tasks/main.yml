@@ -1,4 +1,9 @@
 ---
+- name: Gather facts for localhost
+  setup:
+  delegate_to: localhost
+  tags: [network, discovery]
+
 - name: 检查nmap是否安装
   command: which nmap
   register: nmap_check
@@ -23,6 +28,15 @@
     - ansible_os_family == "RedHat"
     - nmap_check.rc != 0
   become: true
+  tags: [network, discovery]
+
+- name: 安装nmap (macOS)
+  homebrew:
+    name: nmap
+    state: present
+  when: 
+    - ansible_os_family == "Darwin"
+    - nmap_check.rc != 0
   tags: [network, discovery]
 
 - name: 扫描网络中的活跃主机

@@ -1,33 +1,47 @@
 {
   "report_info": {
-    "generated_at": "{{ ansible_date_time.iso8601 }}",
+    "generated_at": "{{ current_time.stdout }}",
     "total_hosts": "{{ groups['servers'] | length }}",
-    "scan_duration": "{{ ansible_date_time.epoch | int - (ansible_date_time.epoch | int - 300) }}"
+    "report_type": "hosts_yml_based",
+    "scan_duration": "{{ timestamp.stdout | int - (timestamp.stdout | int - 300) }}"
   },
   "hosts": [
-{% for host in groups['servers'] %}
-{% set host_vars = hostvars[host] %}
+{% for host in hosts_info %}
     {
-      "hostname": "{{ host }}",
-      "ip_address": "{{ host_vars.ansible_host | default('unknown') }}",
+      "hostname": "{{ host.inventory_hostname }}",
+      "ip_address": "{{ host.ansible_host | default('unknown') }}",
+      "connection_info": {
+        "user": "{{ host.ansible_user | default('unknown') }}",
+        "python_interpreter": "{{ host.ansible_python_interpreter | default('/usr/bin/python') }}",
+        "ssh_timeout": "{{ host.ansible_ssh_timeout | default(30) }}",
+        "command_timeout": "{{ host.ansible_command_timeout | default(30) }}"
+      },
       "system_info": {
-        "distribution": "{{ host_vars.ansible_distribution | default('unknown') }}",
-        "version": "{{ host_vars.ansible_distribution_version | default('unknown') }}",
-        "kernel": "{{ host_vars.ansible_kernel | default('unknown') }}",
-        "architecture": "{{ host_vars.ansible_architecture | default('unknown') }}"
+        "distribution": "{{ host.system_info.stdout | regex_search('NAME=\"([^\"]+)\"') | default('unknown') if host.system_info is defined else 'unknown' }}",
+        "version": "{{ host.system_info.stdout | regex_search('VERSION=\"([^\"]+)\"') | default('unknown') if host.system_info is defined else 'unknown' }}",
+        "kernel": "{{ host.system_info.stdout | regex_search('Linux [^ ]+ ([^ ]+)') | default('unknown') if host.system_info is defined else 'unknown' }}",
+        "architecture": "{{ host.system_info.stdout | regex_search('([a-zA-Z0-9_]+)$') | default('unknown') if host.system_info is defined else 'unknown' }}"
       },
       "hardware_info": {
-        "cpu_count": "{{ host_vars.ansible_processor_cores | default('unknown') }}",
-        "memory_total": "{{ host_vars.ansible_memtotal_mb | default('unknown') }}",
-        "disk_info": "{{ host_vars.disk_info.stdout | default('unknown') | replace('\n', ' ') }}"
+        "cpu_count": "{{ host.cpu_info.stdout | regex_search('CPU核心数\\s*([0-9]+)') | default('unknown') if host.cpu_info is defined else 'unknown' }}",
+        "memory_total": "{{ host.memory_info.stdout | regex_search('Mem:\\s+([0-9]+[KMG]?)') | default('unknown') if host.memory_info is defined else 'unknown' }}",
+        "disk_info": "{{ host.disk_info.stdout | default('unknown') | replace('\n', ' ') if host.disk_info is defined else 'unknown' }}"
       },
       "network_info": {
-        "interfaces": "{{ host_vars.ansible_interfaces | default([]) }}",
-        "default_ipv4": "{{ host_vars.ansible_default_ipv4.address | default('unknown') }}"
+        "interfaces": "{{ host.network_info.stdout | default('unknown') if host.network_info is defined else 'unknown' }}",
+        "default_ipv4": "{{ host.ansible_host | default('unknown') }}"
       },
       "system_status": {
-        "uptime": "{{ host_vars.load_info.stdout | default('unknown') }}",
-        "load_average": "{{ host_vars.load_info.stdout | default('unknown') }}"
+        "uptime": "{{ host.load_info.stdout | default('unknown') if host.load_info is defined else 'unknown' }}",
+        "load_average": "{{ host.load_info.stdout | default('unknown') if host.load_info is defined else 'unknown' }}"
+      },
+      "port_services": {
+        "port_service_info": "{{ host.port_service_info.stdout | default('unknown') | replace('\n', '\\n') if host.port_service_info is defined else 'unknown' }}",
+        "lsof_info": "{{ host.lsof_info.stdout | default('unknown') | replace('\n', '\\n') if host.lsof_info is defined else 'unknown' }}",
+        "service_status": "{{ host.service_status.stdout | default('unknown') | replace('\n', '\\n') if host.service_status is defined else 'unknown' }}"
+      },
+      "processes": {
+        "all_processes": "{{ host.ps_info.stdout | default('unknown') | replace('\n', '\\n') if host.ps_info is defined else 'unknown' }}"
       }
     }{% if not loop.last %},{% endif %}
 {% endfor %}

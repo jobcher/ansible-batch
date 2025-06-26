@@ -90,7 +90,7 @@
             <div class="info-grid">
                 <div class="info-item">
                     <div class="info-label">生成时间:</div>
-                    <div class="info-value">{{ ansible_date_time.iso8601 }}</div>
+                    <div class="info-value">{{ current_time.stdout }}</div>
                 </div>
                 <div class="info-item">
                     <div class="info-label">扫描主机数:</div>
@@ -115,15 +115,15 @@
                     <div class="info-grid">
                         <div class="info-item">
                             <div class="info-label">操作系统:</div>
-                            <div class="info-value">{{ host_vars.ansible_distribution | default('unknown') }} {{ host_vars.ansible_distribution_version | default('') }}</div>
+                            <div class="info-value">{{ host_vars.system_info.stdout | regex_search('NAME="([^"]+)"') | default('unknown') }} {{ host_vars.system_info.stdout | regex_search('VERSION="([^"]+)"') | default('') }}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">内核版本:</div>
-                            <div class="info-value">{{ host_vars.ansible_kernel | default('unknown') }}</div>
+                            <div class="info-value">{{ host_vars.system_info.stdout | regex_search('Linux [^ ]+ ([^ ]+)') | default('unknown') }}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">架构:</div>
-                            <div class="info-value">{{ host_vars.ansible_architecture | default('unknown') }}</div>
+                            <div class="info-value">{{ host_vars.system_info.stdout | regex_search('([a-zA-Z0-9_]+)$') | default('unknown') }}</div>
                         </div>
                     </div>
                 </div>
@@ -133,11 +133,11 @@
                     <div class="info-grid">
                         <div class="info-item">
                             <div class="info-label">CPU核心数:</div>
-                            <div class="info-value">{{ host_vars.ansible_processor_cores | default('unknown') }}</div>
+                            <div class="info-value">{{ host_vars.cpu_info.stdout | regex_search('CPU核心数\\s*([0-9]+)') | default('unknown') }}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">内存总量:</div>
-                            <div class="info-value">{{ host_vars.ansible_memtotal_mb | default('unknown') }} MB</div>
+                            <div class="info-value">{{ host_vars.memory_info.stdout | regex_search('Mem:\\s+([0-9]+[KMG]?)') | default('unknown') }}</div>
                         </div>
                     </div>
                 </div>
@@ -147,11 +147,11 @@
                     <div class="info-grid">
                         <div class="info-item">
                             <div class="info-label">默认IP:</div>
-                            <div class="info-value">{{ host_vars.ansible_default_ipv4.address | default('unknown') }}</div>
+                            <div class="info-value">{{ host_vars.ansible_host | default('unknown') }}</div>
                         </div>
                         <div class="info-item">
                             <div class="info-label">网络接口:</div>
-                            <div class="info-value">{{ host_vars.ansible_interfaces | default([]) | length }} 个</div>
+                            <div class="info-value">{{ host_vars.network_info.stdout | default('unknown') | length }} 个</div>
                         </div>
                     </div>
                 </div>

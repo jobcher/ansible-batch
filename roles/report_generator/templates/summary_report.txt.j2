@@ -1,17 +1,32 @@
 ==========================================
-           服务器资产扫描汇总报告
+            服务器资产扫描汇总报告
 ==========================================
 
-生成时间: {{ ansible_date_time.iso8601 }}
+生成时间: {{ current_time.stdout }}
 扫描主机总数: {{ groups['servers'] | length }}
+报告类型: 基于hosts.yml的主机信息
+
+==========================================
+连接信息统计
+==========================================
+{% set user_stats = {} %}
+{% for host in hosts_info %}
+{% set user = host.ansible_user | default('unknown') %}
+{% if user not in user_stats %}
+{% set _ = user_stats.update({user: 0}) %}
+{% endif %}
+{% set _ = user_stats.update({user: user_stats[user] + 1}) %}
+{% endfor %}
+{% for user, count in user_stats.items() %}
+用户 {{ user }}: {{ count }} 台
+{% endfor %}
 
 ==========================================
 系统分布统计
 ==========================================
 {% set os_stats = {} %}
-{% for host in groups['servers'] %}
-{% set host_vars = hostvars[host] %}
-{% set os_name = host_vars.ansible_distribution | default('Unknown') %}
+{% for host in hosts_info %}
+{% set os_name = host.system_info.stdout | regex_search('NAME=\"([^\"]+)\"') | default('Unknown') if host.system_info is defined else 'Unknown' %}
 {% if os_name not in os_stats %}
 {% set _ = os_stats.update({os_name: 0}) %}
 {% endif %}
@@ -25,47 +40,100 @@
 硬件配置统计
 ==========================================
 {% set total_cpu = 0 %}
-{% set total_memory = 0 %}
-{% for host in groups['servers'] %}
-{% set host_vars = hostvars[host] %}
-{% set total_cpu = total_cpu + (host_vars.ansible_processor_cores | default(0) | int) %}
-{% set total_memory = total_memory + (host_vars.ansible_memtotal_mb | default(0) | int) %}
+{% for host in hosts_info %}
+{% set cpu_count = host.cpu_info.stdout | regex_search('CPU核心数\\s*([0-9]+)') | default(0) | int if host.cpu_info is defined else 0 %}
+{% set total_cpu = total_cpu + cpu_count %}
 {% endfor %}
 总CPU核心数: {{ total_cpu }}
-总内存容量: {{ total_memory }} MB ({{ (total_memory / 1024) | round(2) }} GB)
 
 ==========================================
 网络信息统计
 ==========================================
 {% set unique_ips = [] %}
-{% for host in groups['servers'] %}
-{% set host_vars = hostvars[host] %}
-{% set ip = host_vars.ansible_host | default('unknown') %}
+{% for host in hosts_info %}
+{% set ip = host.ansible_host | default('unknown') %}
 {% if ip not in unique_ips and ip != 'unknown' %}
 {% set _ = unique_ips.append(ip) %}
 {% endif %}
 {% endfor %}
-扫描IP地址数: {{ unique_ips | length }}
+配置IP地址数: {{ unique_ips | length }}
+
+==========================================
+端口服务统计
+==========================================
+{% set total_listening_ports = 0 %}
+{% set total_running_services = 0 %}
+{% set total_processes = 0 %}
+{% for host in hosts_info %}
+{% set listening_ports = host.port_service_info.stdout | regex_search('LISTEN') | length if host.port_service_info is defined else 0 %}
+{% set running_services = host.service_status.stdout | regex_search('running') | length if host.service_status is defined else 0 %}
+{% set processes = host.ps_info.stdout | regex_search('^[^\\s]+') | length if host.ps_info is defined else 0 %}
+{% set total_listening_ports = total_listening_ports + listening_ports %}
+{% set total_running_services = total_running_services + running_services %}
+{% set total_processes = total_processes + processes %}
+{% endfor %}
+总监听端口数: {{ total_listening_ports }}
+总运行服务数: {{ total_running_services }}
+总进程数: {{ total_processes }}
 
 ==========================================
 详细主机列表
 ==========================================
-{% for host in groups['servers'] %}
-{% set host_vars = hostvars[host] %}
-主机名: {{ host }}
-IP地址: {{ host_vars.ansible_host | default('unknown') }}
-操作系统: {{ host_vars.ansible_distribution | default('unknown') }} {{ host_vars.ansible_distribution_version | default('') }}
-内核版本: {{ host_vars.ansible_kernel | default('unknown') }}
-CPU核心数: {{ host_vars.ansible_processor_cores | default('unknown') }}
-内存容量: {{ host_vars.ansible_memtotal_mb | default('unknown') }} MB
-默认IP: {{ host_vars.ansible_default_ipv4.address | default('unknown') }}
-网络接口数: {{ host_vars.ansible_interfaces | default([]) | length }}
-运行时间: {{ host_vars.load_info.stdout | default('unknown') }}
-状态: 在线
+{% for host in hosts_info %}
+主机名: {{ host.inventory_hostname }}
+IP地址: {{ host.ansible_host | default('unknown') }}
+用户名: {{ host.ansible_user | default('unknown') }}
+Python解释器: {{ host.ansible_python_interpreter | default('/usr/bin/python') }}
+操作系统: {{ host.system_info.stdout | regex_search('NAME=\"([^\"]+)\"') | default('unknown') if host.system_info is defined else 'unknown' }} {{ host.system_info.stdout | regex_search('VERSION=\"([^\"]+)\"') | default('') if host.system_info is defined else '' }}
+内核版本: {{ host.system_info.stdout | regex_search('Linux [^ ]+ ([^ ]+)') | default('unknown') if host.system_info is defined else 'unknown' }}
+CPU核心数: {{ host.cpu_info.stdout | regex_search('CPU核心数\\s*([0-9]+)') | default('unknown') if host.cpu_info is defined else 'unknown' }}
+内存容量: {{ host.memory_info.stdout | regex_search('Mem:\\s+([0-9]+[KMG]?)') | default('unknown') if host.memory_info is defined else 'unknown' }}
+默认IP: {{ host.ansible_host | default('unknown') }}
+网络接口数: {{ host.network_info.stdout | default('unknown') | length if host.network_info is defined else 'unknown' }}
+运行时间: {{ host.load_info.stdout | default('unknown') if host.load_info is defined else 'unknown' }}
+监听端口数: {{ host.port_service_info.stdout | regex_search('LISTEN') | length if host.port_service_info is defined else 'unknown' }}
+运行服务数: {{ host.service_status.stdout | regex_search('running') | length if host.service_status is defined else 'unknown' }}
+进程数: {{ host.ps_info.stdout | regex_search('^[^\\s]+') | length if host.ps_info is defined else 'unknown' }}
+状态: 配置中
+------------------------------------------
+{% endfor %}
+
+==========================================
+端口服务详细信息
+==========================================
+{% for host in hosts_info %}
+=== {{ host.inventory_hostname }} ({{ host.ansible_host }}) ===
+{% if host.port_service_info is defined and host.port_service_info.stdout != 'unknown' %}
+端口服务信息:
+{{ host.port_service_info.stdout | truncate(500) }}
+{% else %}
+端口服务信息: 未收集
+{% endif %}
+
+{% if host.lsof_info is defined and host.lsof_info.stdout != 'unknown' %}
+端口进程对应关系:
+{{ host.lsof_info.stdout | truncate(500) }}
+{% else %}
+端口进程对应关系: 未收集
+{% endif %}
+
+{% if host.service_status is defined and host.service_status.stdout != 'unknown' %}
+服务状态:
+{{ host.service_status.stdout | truncate(500) }}
+{% else %}
+服务状态: 未收集
+{% endif %}
+
+{% if host.ps_info is defined and host.ps_info.stdout != 'unknown' %}
+进程信息 (前20个):
+{{ host.ps_info.stdout | truncate(1000) }}
+{% else %}
+进程信息: 未收集
+{% endif %}
 ------------------------------------------
 {% endfor %}
 
 ==========================================
 扫描完成
 ==========================================
-报告生成完成时间: {{ ansible_date_time.iso8601 }} 
+报告生成完成时间: {{ current_time.stdout }} 

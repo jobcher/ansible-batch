@@ -102,4 +102,91 @@
     echo "=== 时区信息 ==="
     timedatectl 2>/dev/null || date +%Z
   register: system_time
-  tags: [asset, time] 
+  tags: [asset, time]
+
+# ===== 端口服务信息收集 =====
+- name: 获取所有端口及其服务名 (详细)
+  raw: |
+    echo "=== 所有监听端口及服务 ==="
+    if command -v ss &>/dev/null; then
+      ss -tulnp
+    else
+      netstat -tulnp
+    fi
+    echo ""
+    echo "=== 所有连接端口及服务 ==="
+    if command -v ss &>/dev/null; then
+      ss -tunp
+    else
+      netstat -tunp
+    fi
+  register: port_service_info
+  ignore_errors: true
+  tags: [asset, ports, services]
+
+- name: 获取端口与进程对应关系 (lsof)
+  raw: |
+    echo "=== 端口与进程对应关系 (lsof) ==="
+    if command -v lsof &>/dev/null; then
+      lsof -i -Pn
+    else
+      echo "lsof命令不可用"
+    fi
+  register: lsof_info
+  ignore_errors: true
+  tags: [asset, ports, services]
+
+- name: 获取所有进程信息 (详细)
+  raw: |
+    echo "=== 所有进程信息 ==="
+    ps aux
+    echo ""
+    echo "=== 按CPU使用率排序的前20个进程 ==="
+    ps aux --sort=-%cpu | head -20
+    echo ""
+    echo "=== 按内存使用率排序的前20个进程 ==="
+    ps aux --sort=-%mem | head -20
+  register: ps_info
+  tags: [asset, processes]
+
+- name: 获取服务状态信息
+  raw: |
+    echo "=== 系统服务状态 ==="
+    if command -v systemctl &>/dev/null; then
+      systemctl list-units --type=service --all --no-pager | head -30
+    elif command -v service &>/dev/null; then
+      service --status-all 2>/dev/null | head -30
+    else
+      echo "无法获取服务状态"
+    fi
+  register: service_status
+  ignore_errors: true
+  tags: [asset, services]
+
+- name: 获取当前时间戳
+  raw: date
+  register: collection_time
+  tags: [asset, ports, services, processes]
+
+- name: 保存端口和服务进程信息到本地
+  copy:
+    content: |
+      ========================================
+      服务器: {{ inventory_hostname }} ({{ ansible_host }})
+      收集时间: {{ collection_time.stdout }}
+      ========================================
+      
+      ===== 端口与服务信息 =====
+      {{ port_service_info.stdout }}
+      
+      ===== 端口与进程对应关系 =====
+      {{ lsof_info.stdout }}
+      
+      ===== 进程详细信息 =====
+      {{ ps_info.stdout }}
+      
+      ===== 服务状态信息 =====
+      {{ service_status.stdout }}
+    dest: "/tmp/port_service_ps_{{ inventory_hostname }}.txt"
+  delegate_to: localhost
+  tags: [asset, ports, services, processes] 
