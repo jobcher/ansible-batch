@@ -1,0 +1,47 @@
+---
+- name: 服务器资产扫描和发现 (Python 2.7兼容)
+  hosts: all
+  gather_facts: false
+  become: false
+  
+  vars:
+    # 全局变量
+    scan_network: true
+    collect_assets: true
+    generate_reports: true
+    network_subnet: "192.168.1.0/24"
+    
+  pre_tasks:
+    - name: 显示扫描开始信息
+      debug:
+        msg: |
+          开始服务器资产扫描 (Python 2.7兼容)
+          目标主机: {{ groups['servers'] | length }} 台
+          扫描时间: {{ ansible_date_time.iso8601 }}
+      
+  roles:
+    - role: asset_discovery
+      tags: [asset, discovery]
+      
+  post_tasks:
+    - name: 显示扫描完成信息
+      debug:
+        msg: "资产信息收集完成"
+
+- name: 网络扫描和发现
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  roles:
+    - role: network_scanner
+      tags: [network, scanner]
+      
+- name: 生成资产报告
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  
+  roles:
+    - role: report_generator
+      tags: [report, generator] 
